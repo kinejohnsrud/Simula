@@ -1,0 +1,61 @@
+
+external class demos="/usr/share/demos/demos.atr";
+demos
+	begin
+		integer I=1;
+		integer P=2;
+		integer B=3;
+		ref(Res) channel_;
+		real frameRate;
+		real channelCapacity;
+		ref(RDist) array frameSize_(I:B);
+		real mean, variance, lambda;
+		integer j,k;
+		
+		Entity class Frame(size); real size;		! The FRAME activity diagram;
+		begin
+			channel_.acquire(1);
+			hold(size/channelCapacity);
+			channel_.release(1);
+		end;
+	
+		frameRate := 25;
+		channelCapacity := 600000;
+		channel_ :- new Res("channel",1);
+
+		! I-frames;
+		mean := 74045.7; variance := 3.71256&8;
+		frameSize_(I) :- new Normal("I-frames",mean,sqrt(variance));
+
+		! P-frames;
+		mean := 21528.4; variance := 2.44052&8;
+		lambda := mean / variance;
+		k := entier(lambda * mean + 0.5);
+		frameSize_(P) :- new Erlang("P-frames",mean,k);
+
+		! B-frames;
+		mean := 10532.9; variance := 4.99019&7;
+		lambda := mean / variance;
+		k := entier(lambda * mean + 0.5);
+		frameSize_(B) :- new Erlang("B-frames",mean,k);
+
+		!generate 40000 frames;
+		while j < 39996 do
+		begin
+			!create a GOP;
+			for k := I, B, B, P, B, B, P, B, B, P, B, B do
+			begin
+				new Frame(edit("",k),frameSize_(k).sample).schedule(0.0);
+				hold(1/frameRate);
+			end;
+			j := j + 12;
+		end;
+		new Frame(edit("",I),frameSize_(I).sample).schedule(0.0);
+		hold(1/frameRate);
+		new Frame(edit("",B),frameSize_(B).sample).schedule(0.0);
+		hold(1/frameRate);
+		new Frame(edit("",B),frameSize_(B).sample).schedule(0.0);
+		hold(1/frameRate);
+		new Frame(edit("",P),frameSize_(P).sample).schedule(0.0);
+		hold(1/frameRate);
+	end;
