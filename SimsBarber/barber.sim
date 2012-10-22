@@ -1,0 +1,23 @@
+external class Demos = "/usr/share/demos/demos.atr";
+
+Demos
+	begin
+		ref(res) barbers;
+
+		entity class customer;
+		begin
+			barbers.acquire(1);
+				hold(15.0);
+			barbers.release(1);
+		end;
+
+		barbers :- new res("barbers", 2);
+
+		new customer("c").schedule(0.0);
+ 		new customer("c").schedule(20.0);
+ 		new customer("c").schedule(35.0);
+ 		new customer("c").schedule(40.0);
+
+		hold(65.0);
+
+	end;

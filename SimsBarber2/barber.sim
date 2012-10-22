@@ -1,0 +1,34 @@
+external class Demos = "/usr/share/demos/demos.atr";
+
+Demos
+	begin
+		ref(res) barbers;
+		ref(rdist) c1, c2, s1, s2;
+
+		entity class cut;
+		begin
+			new cut("cut").schedule(c1.sample);
+			barbers.acquire(1);
+				hold(s1.sample);
+			barbers.release(1);
+		end;
+
+		entity class both;
+		begin
+			new both("both").schedule(c2.sample);
+			barbers.acquire(1);
+				hold(s2.sample);
+			barbers.release(1);
+		end;
+
+		c1	:- new negexp("c1", 0.025);		! 1 over 40;
+		c2	:- new negexp("c2", 0.01666667);	! 1 over 60;
+		s1	:- new uniform("s1", 12.0, 24.0);	! haircut;
+		s2	:- new uniform("s2", 20.0, 36.0);	! haircut and shave;
+		barbers	:- new res("barbers", 1);
+
+		new cut("cut").schedule(0.0);
+		new both("both").schedule(10.0);
+
+		hold(480.0);
+	end;
