@@ -1,0 +1,7 @@
+begin
+	external class demos = "/usr/share/demos/demos.atr";
+	demos begin
+		! HELLO WORLD PROGRAM (Step 1);
+		outText("HELLO WORLD");
+	end;
+end;
