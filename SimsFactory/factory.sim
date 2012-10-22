@@ -1,0 +1,28 @@
+external class Demos = "/usr/share/demos/demos.atr";
+
+Demos
+	begin
+		ref(res)weighbridge;
+
+		entity class van;
+		begin
+			weighbridge.acquire(1);
+				hold(3.0);
+			weighbridge.release(1);
+
+			hold(20.0);
+
+			weighbridge.acquire(1);
+				hold(3.0);
+			weighbridge.release(1);
+		end;
+
+		weighbridge :- new res("weighbridge",1);
+		new van("V").schedule(0.0);
+                new van("V").schedule(1.0);
+                new van("V").schedule(24.0);
+                new van("V").schedule(25.0);
+
+		hold(60.0);
+
+	end;
