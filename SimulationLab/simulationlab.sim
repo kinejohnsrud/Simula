@@ -1,0 +1,126 @@
+external class demos ="/usr/share/demos/demos.atr";
+
+Demos						! NB you may need to compile it with more memory than standard;
+	begin
+		ref(bin) myBin;
+		ref(res) c;
+		ref(rdist) next;
+		ref(rdist) adjustmentTime;
+		ref(rdist) sessionTime;
+		ref(tally) avgBitrate;		
+		ref(count) numOfChanges, rejects;
+		ref(bdist) smallScreen;
+		ref(tally) verygood;
+		real gamma;
+		integer b_min, b_max, b_step, i;
+
+		Entity class Generator;			! Generates a new session for every time given by assignment;
+		begin
+			i := 1;
+			loop:
+				new Session(edit("session", i)).schedule(now);
+				hold(next.sample);
+				i := i + 1;
+				repeat;
+		end;
+		
+		Entity class Session;
+		begin
+			integer b;
+			long real timestamp;
+			long real videotime;
+			long real timingInterval;			
+			long real progress;				
+			boolean screensize;
+			timestamp := time;
+			videotime := sessionTime.sample;
+			screensize := smallScreen.sample;
+			
+			if c.avail >= b_min then			! Premiss for getting bandwidth;
+			begin
+				b := min(c.avail, b_max);
+				c.acquire(b);
+
+				loop:
+
+					avgBitrate.update(b);
+
+					if screensize then				! Gathers data for the QoE;
+					begin
+						if b >= 4 then verygood.update(1)
+						else verygood.update(0);
+					end else
+					begin
+						if b >= 6 then verygood.update(1)
+						else verygood.update(0);
+					end;
+
+					if gamma = 0.0 then 			! to do what the system cannot do itself;
+					begin
+						hold(videotime);
+						goto L;
+					end;
+
+					progress := time - timestamp;			! check if interval excedes videolength;		
+					timingInterval := adjustmentTime.sample;		
+					if (progress + timingInterval) > videotime then	
+					begin
+						timingInterval := videotime - progress;
+						hold(timingInterval);		
+						goto L;						! if so, go directly to end;			
+					end;
+
+					hold(timingInterval);			
+
+					if c.avail > b_min then 					! the if-statement given in the exercise;
+					begin
+						if  b ne min(b+b_step, b_max) then numOfChanges.update(1);	! summing up number of actual bitrate-changes;
+						c.release(b);
+						c.acquire(min(b+b_step, b_max));
+						b := min(b+b_step, b_max);
+					end else
+					begin
+						if b ne max(b-b_step, b_min) then numOfChanges.update(1);	! summing up number of actual bitrate-changes;
+						c.release(b);
+						c.acquire(max(b-b_step, b_min));
+						b := max(b-b_step, b_min);
+					end;
+			
+				
+					if time >= timestamp + videotime then 			! Check if videoSession is finished. If so, leave;
+					begin
+						L:c.release(b);
+						myBin.give(1);					! to keep track of number of sessions(5000);
+					end else 
+						repeat;
+			end else 
+			begin 
+				rejects.update(1);					! keeping track of all the rejects;
+			end;
+		end;
+		
+		gamma := 0.1;		! change between 1.0, 0.1, 0.0;
+		b_min := 2;
+		b_max := 8;
+		b_step := 2;		! change between 1 and 2;
+
+		myBin			:- new bin("Bin", 0);
+		c 			:- new res("capacity", 100);
+		next 			:- new negexp("next", 1/4);	
+		adjustmentTime	:- new negexp("adjust. interval",gamma);			! comment out one of the adjustmentTimes;
+		!adjustmentTime	:- new constant("adjust. interval",1/gamma);
+		sessionTime 		:- new negexp("sessionTime", 1/90);
+		avgBitrate		:- new tally("Avg. bitrate");
+		numOfChanges		:- new count("NumOfChanges");
+		rejects		:- new count("Rejects");
+		smallScreen		:- new draw("Small screen", 0.70);
+		verygood		:- new tally("Very Good");
+
+		while REPLICATION <= 10 do
+		begin
+			new Generator("Generator").schedule(0.0);
+			myBin.take(5000);
+			noreport;
+			REPLICATE;
+		end;
+	end;
