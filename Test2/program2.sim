@@ -1,0 +1,22 @@
+begin
+ external class demos = "/usr/share/demos/demos.atr";
+ demos begin
+ 
+  ref(RDist) waiting_time;
+  real Mean_Wait_Time , SIM_TIME;
+  
+  Entity class EntityXX;
+  begin
+   hold(waiting_time.sample);
+  end;
+
+  Mean_Wait_Time := 10*60; !10 Minutes in seconds;
+  SIM_TIME := 1*24*60*60; !simulate for 1 days (in seconds);
+  
+  waiting_time :- new NegExp("wait1",1/Mean_Wait_Time);
+  
+  new EntityXX("EntityXX_Name").schedule(0.0);
+  
+  hold(SIM_TIME);
+ end;
+end;
