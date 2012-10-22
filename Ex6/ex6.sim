@@ -1,0 +1,77 @@
+external class demos="/usr/share/demos/demos.atr";
+
+demos
+	begin
+		long real MAX_DELAY = 3.0;
+		long real TRANSMISSION_DELAY_BETWEEN_ROUTERS = 0.2;
+		
+		ref(WaitQ) in1_, in2_, in3_;					! The routers;
+		ref(Count) recvPackets_, lostPackets_;
+		ref(Tally) delay_;
+		ref(RDist) processingTime_, interArrivalTime_;
+		ref(BDist) loadBalancing_;
+		
+		Entity class Packet;						! PACKET ENTITY CLASS;
+		begin
+			long real timestamp;
+			boolean ttl;
+			integer i;
+			timestamp := time;
+			ttl := true;
+			if loadBalancing_.sample then in1_.wait			! Choose between R1 and R2;
+			else in2_.wait;
+			if ttl then begin
+				hold(TRANSMISSION_DELAY_BETWEEN_ROUTERS);
+				in3_.wait;					! Sends packet to R3;
+				if ttl then begin
+					delay_.update(time-timestamp);
+					recvPackets_.update(1);
+				end;
+			end;
+		end;
+
+		Entity class Generator;						! GENERATOR ENTITY CLASS;
+		begin
+			integer i;
+			i := 1;
+			loop:
+				new Packet(edit("packet",i)).schedule(now);
+				hold(interArrivalTime_.sample);
+				i := i + 1;
+				repeat;
+		end;
+		
+		Entity class Router(inputBuffer_);				! ROUTER ENTITY CLASS;
+		ref(WaitQ) inputBuffer_;						! what is waitq;
+		begin
+			ref(Packet) packet_;
+			loop:
+				packet_ :- inputBuffer_.coopt;				! what does coopt do;
+				if time > (packet_.timestamp + MAX_DELAY) then begin
+					!the packet is old, count it as lost;
+					packet_.ttl := false;
+					lostPackets_.update(1);
+				end
+				else begin
+					!process the packet and put it in the output buffer;
+					hold(processingTime_.sample);
+				end;
+				packet_.schedule(now);
+			repeat;
+		end;
+		
+		interArrivalTime_	 :- new NegExp("interarrival", 2.0);
+		processingTime_		 :- new Erlang("processing", 1.0/3.0, 3.0);
+		lostPackets_		 :- new Count("lost packets");
+		delay_			 :- new Tally("delay");
+		loadBalancing_		 :- new Draw("load bal.", 0.5);
+		in1_			 :- new WaitQ("in1");
+		in2_			 :- new WaitQ("in2");
+		in3_			 :- new WaitQ("in3");
+		recvPackets_		 :- new Count("recv packets");
+		new Generator("Gen").schedule(0);
+		new Router("R1",in1_).schedule(0);
+		new Router("R2",in2_).schedule(0);
+		new Router("R3",in3_).schedule(0);
+		hold(300.0);
+	end;
