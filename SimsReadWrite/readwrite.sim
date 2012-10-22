@@ -1,0 +1,44 @@
+external class Demos ="/usr/share/demos/demos.atr";
+
+Demos
+	begin
+		ref(res) file;
+		ref(count) reads, writes;
+
+		entity class reader;
+		begin
+			LOOP:
+			file.acquire(1);
+			hold(2.0);
+			file.release(1);
+			reads.update(1);
+			hold(5.0);
+			repeat;
+		end;
+
+		entity class writer;
+		begin
+			LOOP:
+			hold(5.0);
+	
+			file.acquire(3);
+			hold(3.0);
+			file.release(3);
+			writes.update(1);
+			repeat;
+		end;
+
+		reads	:- new count("reads");
+		writes	:- new count("writes");
+		file	:- new res("file", 3);
+
+		!trace;
+
+		new reader("r").schedule(0.0);
+		new writer("w").schedule(0.0);
+                new reader("r").schedule(0.0);
+                new reader("r").schedule(2.0);
+                new writer("w").schedule(1.0);
+		hold(25.0);
+
+	end;
