@@ -1,0 +1,31 @@
+external class Demos = "/usr/share/demos/demos.atr";
+
+Demos
+	begin
+		integer k;
+		ref(res) oven;
+		ref(rdist) assembly, fire;
+		ref(count) widgets;
+
+		entity class assembler;
+		begin
+			LOOP:
+			hold(assembly.sample);
+			oven.acquire(1);
+			hold(fire.sample);
+			oven.release(1);
+			widgets.update(1);
+			repeat;
+		end;
+
+		assembly	:- new uniform("assembly", 25.0, 35.0);
+		fire		:- new normal("fire", 8.0, 2.0);
+		widgets		:- new count("widgets");
+		oven		:- new res("oven", 1);
+
+		for k := 1 step 1 until 3 do
+			new assembler("assembler").schedule(0.0);
+
+		hold(40.0*60.0);
+
+	end;
