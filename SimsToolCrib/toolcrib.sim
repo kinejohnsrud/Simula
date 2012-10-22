@@ -1,0 +1,35 @@
+external class Demos = "/usr/share/demos/demos.atr";
+
+Demos
+	begin
+		ref(res) clerks;
+		ref(rdist) nextm1, nextm2, serve1, serve2;
+
+		entity class mech1;
+		begin
+			new mech1("m1:").schedule(nextm1.sample);
+			clerks.acquire(1);
+				hold(serve1.sample);
+			clerks.release(1);
+		end;
+
+		entity class mech2;
+		begin
+			new mech2("m2:").schedule(nextm2.sample);
+                        clerks.acquire(1);
+                                hold(serve2.sample);
+                        clerks.release(1);
+                end;
+
+		nextm1	:- new negexp("nextm1", 0.005);                
+		nextm2  :- new negexp("nextm2", 0.008);
+		serve1	:- new uniform("serve1", 200.0, 400.0);
+                serve2  :- new uniform("serve2", 75.0, 150.0);
+		clerks	:- new res("clerks", 2);
+		
+		new mech1("m1:").schedule(0.0);
+		new mech2("m2:").schedule(0.0);
+
+		hold(480.0*60.0);
+	end;
+
