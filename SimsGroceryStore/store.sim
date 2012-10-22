@@ -1,0 +1,52 @@
+external class Demos = "/usr/share/demos/demos.atr";
+
+Demos
+	begin
+		ref(res) checkout;
+		ref(rdist) array shop(1:3);
+		ref(bdist) array aisle(1:3);	! prob + timeinsec, boolean, draw;
+		ref(idist) array items(1:3);	! randint;
+		ref(rdist) next, overhead;
+		ref(idist) impulse;
+		integer k;
+
+		entity class customer;
+		begin
+			integer k, tot;			! tot er antall varer;
+
+			new customer("c").schedule(next.sample);
+			for k := 1 step 1 until 3 do
+			begin 
+				if aisle(k).sample then
+				begin
+					tot := tot + items(k).sample;
+					hold(shop(k).sample);;
+				end;
+			end;
+		
+			tot := tot + impulse.sample;
+			checkout.acquire(1);
+			hold(overhead.sample + 10*tot);
+			checkout.release(1);
+		
+		end;
+
+	
+		next		:- new negexp("next", 0.0125);
+		aisle(1)	:- new draw("aisle 1", 0.75);                
+		aisle(2)        :- new draw("aisle 2", 0.55);
+                aisle(3)        :- new draw("aisle 3", 0.82);
+		items(1)	:- new randint("items 1", 2, 4);
+                items(2)        :- new randint("items 2", 3, 5);
+                items(3)        :- new randint("items 3", 6, 8);
+		shop(1)		:- new uniform("shop 1", 60.0, 180.0);
+                shop(2)         :- new uniform("shop 2", 120.0, 180.0);
+                shop(3)         :- new uniform("shop 3", 75.0, 165.0);
+		overhead	:- new uniform("overhead", 15.0, 35.0);
+		impulse		:- new randint("impulse", 1, 3);
+		checkout	:- new res("check out", 2);		! no of couters;
+		new customer("c").schedule(0.0);
+	
+		hold(8*3600);
+	end;
+
