@@ -1,0 +1,45 @@
+external class Demos = "/usr/share/demos/demos.atr";
+
+Demos
+	begin
+		ref(res) crane; ref(count)jobs;
+		ref(rdist) load, polish1, reposition, polish2, remove, next, use;
+
+		entity class machine;
+		begin
+			crane.acquire(1);
+		LOOP:
+				hold(load.sample);
+			crane.release(1);
+			hold(polish1.sample);
+			crane.acquire(1);
+				hold(reposition.sample);
+			crane.release(1);
+			hold(polish2.sample);
+			crane.acquire(1);
+				hold(remove.sample);
+			jobs.update(1);
+			repeat;
+		end***machine***;
+
+		entity class other;
+		begin
+			new other("other").schedule(next.sample);
+			crane.acquire(1);
+				hold(use.sample);
+			crane.release(1);
+		end***other***;
+
+		crane	 :- new res("crane", 1);
+		jobs	 :- new count("jobs done");
+		load	 :- new uniform("load", 15.0, 29.0);
+		polish1	 :- new uniform("polish 1", 60.0, 100.0);
+		reposition :- new uniform("reposition", 8.0, 22.0);
+		polish2	 :- new uniform("polish 2", 80.0, 140.0);
+		remove	 :- new uniform("remove", 15.0, 30.0);
+		next	 :- new negexp("next o'job", 0.020);
+		use	 :- new normal("use", 25.0, 5.0);
+		new other("other").schedule(20.0);
+		new machine("m").schedule(0.0);
+		hold(24000.0);
+	end;
